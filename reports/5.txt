@@ -1,0 +1,50 @@
+@Egorchik321 ➜ /workspaces/lab-6-test (main) $ # 1. Остановите всё
+docker-compose -f docker-compose.full.yml down
+
+# 2. Запустите с мониторингом
+docker-compose -f docker-compose.full.yml up -d prometheus grafana
+
+# 3. Проверьте доступность
+sleep 10
+echo "Prometheus: http://localhost:9090"
+echo "Grafana: http://localhost:3000 (admin/admin)"
+
+# 4. Сгенерируйте тестовые метрики
+python scripts/log_ci_metrics.py
+
+# 5. Импортируйте дашборды в Grafana
+curl -X POST -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  http://localhost:3000/api/dashboards/db \
+  -d @monitoring/dashboards/spark-dashboard.json
+WARN[0000] /workspaces/lab-6-test/docker-compose.full.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Running 13/13
+ ✔ Container lab-6-test-redis-1                 Removed                                                                                                                                    0.2s 
+ ✔ Container lab-6-test-spark-worker-2-1        Removed                                                                                                                                    0.3s 
+ ✔ Container lab-6-test-flink-taskmanager-1-1   Removed                                                                                                                                    0.3s 
+ ✔ Container lab-6-test-spark-history-server-1  Removed                                                                                                                                    0.2s 
+ ✔ Container lab-6-test-ml-server-1             Removed                                                                                                                                    0.3s 
+ ✔ Container lab-6-test-kafka-1-1               Removed                                                                                                                                    0.2s 
+ ✔ Container lab-6-test-grafana-1               Removed                                                                                                                                    0.2s 
+ ✔ Container lab-6-test-prometheus-1            Removed                                                                                                                                    0.1s 
+ ✔ Container lab-6-test-flink-jobmanager-1      Removed                                                                                                                                    0.0s 
+ ✔ Container lab-6-test-zookeeper-1             Removed                                                                                                                                    0.0s 
+ ✔ Network lab-6-test_kafka-network             Removed                                                                                                                                    0.0s 
+ ✔ Network lab-6-test_monitoring-network        Removed                                                                                                                                    0.1s 
+ ✔ Network lab-6-test_spark-network             Removed                                                                                                                                    0.1s 
+WARN[0000] /workspaces/lab-6-test/docker-compose.full.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Running 1/2
+ ✔ Network lab-6-test_monitoring-network  Created                                                                                                                                          0.0s 
+ ⠋ Network lab-6-test_spark-network       Creating                                                                                                                                         0.0s 
+[+] Running 4/4d orphan containers ([lab-6-test-spark-executor-spot-4-1 lab-6-test-spark-executor-spot-2-1 lab-6-test-spark-executor-spot-1-1 lab-6-test-spark-executor-ondemand-1 lab-6-test-sp
+ ✔ Network lab-6-test_monitoring-network  Created                                                                                                                                          0.0s 
+ ✔ Network lab-6-test_spark-network       Created                                                                                                                                          0.0s 
+ ✔ Container lab-6-test-prometheus-1      Started                                                                                                                                          0.4s 
+ ✔ Container lab-6-test-grafana-1         Started                                                                                                                                          0.6s 
+Prometheus: http://localhost:9090
+Grafana: http://localhost:3000 (admin/admin)
+CI/CD метрики сохранены:
+   - Длительность: 125.5с
+   - Экономия: 57.6%
+   - Статус: SUCCESS
+curl: (56) Recv failure: Connection reset by peer

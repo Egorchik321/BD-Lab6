@@ -1,0 +1,94 @@
+services:
+  spark-master:
+    build: ./spark
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 2G
+        reservations:
+          cpus: '0.3'
+          memory: 1G
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+    ports:
+      - "8080:8080"
+
+  spark-worker:
+    build: ./spark
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 16G
+        reservations:
+          cpus: '1.0'
+          memory: 12G
+    environment:
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=12g
+      - SPARK_EXECUTOR_MEMORY=8g
+      - SPARK_EXECUTOR_MEMORY_OVERHEAD=4g
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+    depends_on:
+      - spark-master
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    build: ./kafka
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+
+  redis:
+    build: ./redis
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    ports:
+      - "6379:6379"
+
+  ml-server:
+    build: ./ml-server
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    ports:
+      - "5000:5000"

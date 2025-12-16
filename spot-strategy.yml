@@ -1,0 +1,154 @@
+# Эмуляция стратегии spot инстансов через Docker labels и ресурсы
+version: '3.8'
+
+services:
+  # Spark Driver (on-demand инстанс)
+  spark-driver:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.master.Master
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'    # On-demand: стабильная производительность
+          memory: 2G
+      placement:
+        constraints:
+          - node.labels.instance-type == on-demand
+    labels:
+      - "instance-type=on-demand"
+      - "cost-tier=premium"
+      - "availability=high"
+      - "interruption-risk=low"
+    environment:
+      - SPARK_DRIVER_HOST=spark-driver
+      - SPARK_DRIVER_MEMORY=1g
+      - SPARK_DRIVER_CORES=2
+
+  # Spark Executors (spot инстансы - 80%)
+  spark-executor-spot-1:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.worker.Worker 
+      spark://spark-driver:7077 
+      --cores 2 
+      --memory 4g
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'    # Spot: меньшая стоимость
+          memory: 4G
+      placement:
+        constraints:
+          - node.labels.instance-type == spot
+    labels:
+      - "instance-type=spot"
+      - "cost-tier=economy"
+      - "availability=medium"
+      - "interruption-risk=high"
+      - "spot-percentage=80"
+    environment:
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=4g
+      - SPARK_EXECUTOR_INSTANCES=1
+    depends_on:
+      - spark-driver
+
+  spark-executor-spot-2:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.worker.Worker 
+      spark://spark-driver:7077 
+      --cores 2 
+      --memory 4g
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 4G
+      placement:
+        constraints:
+          - node.labels.instance-type == spot
+    labels:
+      - "instance-type=spot"
+      - "cost-tier=economy"
+      - "spot-percentage=80"
+    depends_on:
+      - spark-driver
+
+  spark-executor-spot-3:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.worker.Worker 
+      spark://spark-driver:7077 
+      --cores 2 
+      --memory 4g
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 4G
+      placement:
+        constraints:
+          - node.labels.instance-type == spot
+    labels:
+      - "instance-type=spot"
+      - "cost-tier=economy"
+      - "spot-percentage=80"
+    depends_on:
+      - spark-driver
+
+  spark-executor-spot-4:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.worker.Worker 
+      spark://spark-driver:7077 
+      --cores 2 
+      --memory 4g
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 4G
+      placement:
+        constraints:
+          - node.labels.instance-type == spot
+    labels:
+      - "instance-type=spot"
+      - "cost-tier=economy"
+      - "spot-percentage=80"
+    depends_on:
+      - spark-driver
+
+  # Один on-demand executor (20%)
+  spark-executor-ondemand:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.worker.Worker 
+      spark://spark-driver:7077 
+      --cores 2 
+      --memory 4g
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'    # On-demand: надежность
+          memory: 4G
+      placement:
+        constraints:
+          - node.labels.instance-type == on-demand
+    labels:
+      - "instance-type=on-demand"
+      - "cost-tier=premium"
+      - "spot-percentage=20"
+    environment:
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=4g
+      - SPARK_EXECUTOR_INSTANCES=1
+    depends_on:
+      - spark-driver

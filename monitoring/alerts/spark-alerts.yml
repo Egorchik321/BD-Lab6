@@ -1,0 +1,44 @@
+groups:
+  - name: spark-alerts
+    rules:
+      - alert: HighShuffleSpill
+        expr: spark_shuffle_spill_memory > 1000000000  # 1 GB
+        for: 10m
+        labels:
+          severity: warning
+          service: spark
+        annotations:
+          summary: "Высокий spill в Spark shuffle"
+          description: "Spill превысил 1 ГБ в течение 10 минут на {{ $labels.instance }}"
+          
+      - alert: SparkExecutorDown
+        expr: up{job="spark-metrics"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: spark
+        annotations:
+          summary: "Spark executor недоступен"
+          description: "Executor {{ $labels.instance }} не отвечает более 2 минут"
+
+  - name: data-quality-alerts
+    rules:
+      - alert: HighDataDrift
+        expr: data_drift_score > 0.2
+        for: 5m
+        labels:
+          severity: critical
+          service: data-quality
+        annotations:
+          summary: "Высокий data drift"
+          description: "Data drift score {{ $value }} > 0.2. Проверьте качество данных."
+          
+      - alert: LateArrivingData
+        expr: time() - last_data_timestamp > 300  # 5 минут
+        for: 2m
+        labels:
+          severity: warning
+          service: data-pipeline
+        annotations:
+          summary: "Данные поступают с задержкой"
+          description: "Нет новых данных более 5 минут"

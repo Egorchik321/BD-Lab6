@@ -1,0 +1,48 @@
+{
+  "dashboard": {
+    "title": "Spark Cluster Monitoring",
+    "panels": [
+      {
+        "title": "Spark Worker Cores Usage",
+        "type": "stat",
+        "targets": [{
+          "expr": "spark_worker_cores_used",
+          "legendFormat": "Cores Used"
+        }]
+      },
+      {
+        "title": "Spark Executor Memory",
+        "type": "graph",
+        "targets": [{
+          "expr": "spark_executor_memory_used",
+          "legendFormat": "Memory Used"
+        }]
+      },
+      {
+        "title": "Shuffle Spill Memory",
+        "type": "graph",
+        "targets": [{
+          "expr": "spark_shuffle_spill_memory",
+          "legendFormat": "Spill Memory"
+        }],
+        "thresholds": {
+          "steps": [{
+            "color": "green",
+            "value": null
+          }, {
+            "color": "red", 
+            "value": 1000000000
+          }]
+        }
+      },
+      {
+        "title": "Active Applications",
+        "type": "stat",
+        "targets": [{
+          "expr": "spark_applications_active",
+          "legendFormat": "Active Apps"
+        }]
+      }
+    ]
+  }
+}

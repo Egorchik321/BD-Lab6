@@ -1,0 +1,54 @@
+{
+  "timestamp": "2025-12-16T05:18:43.984988",
+  "cost_analysis": {
+    "monthly": {
+      "baseline": 2903.04,
+      "optimized": 1354.75,
+      "savings_percentage": 53.33,
+      "savings_amount": 1548.29
+    },
+    "per_job": {
+      "baseline": 7.68,
+      "optimized": 3.3792,
+      "savings": 4.3008
+    }
+  },
+  "spot_utilization": {
+    "percentage": 80,
+    "executors_spot": 8,
+    "executors_ondemand": 2,
+    "total_executors": 10
+  },
+  "performance_metrics": {
+    "cost_efficiency": 75.0,
+    "optimization_factor": 2.27,
+    "target_sla": 99.9,
+    "achieved_sla": 99.92
+  },
+  "instance_recommendations": {
+    "cpu_bound_tasks": {
+      "recommended": "c5.4xlarge",
+      "cost_per_core": 0.048,
+      "performance": "high",
+      "savings_vs_general": 0.35
+    },
+    "memory_bound_tasks": {
+      "recommended": "r5.4xlarge",
+      "cost_per_gb": 0.009,
+      "performance": "high",
+      "savings_vs_general": 0.25
+    },
+    "general_tasks": {
+      "recommended": "m5.2xlarge",
+      "cost_balance": "optimal",
+      "performance": "good"
+    }
+  },
+  "optimization_strategies": [
+    "80% spot instances for executors",
+    "On-demand for driver (high availability)",
+    "Dynamic allocation (2-8 executors)",
+    "Right-sizing instances per task type",
+    "Memory optimization (60% fraction)"
+  ]
+}

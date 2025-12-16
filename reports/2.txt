@@ -1,0 +1,37 @@
+@Egorchik321 ➜ /workspaces/lab-6-test (main) $ echo "=== Проверка доступности сервисов ==="
+
+# 1. Spark Master UI
+echo -n "Spark Master UI: "
+if curl -s -f http://localhost:8080 > /dev/null; then
+    echo "✅ ДОСТУПЕН"
+else
+    echo "❌ НЕДОСТУПЕН"
+fi
+
+# 2. Spark Workers
+echo -n "Spark Worker 1: "
+if curl -s -f http://localhost:8081 > /dev/null; then
+    echo "✅ ДОСТУПЕН"
+else
+    echo "❌ НЕДОСТУПЕН"
+fi
+
+echo "=== Проверка завершена ==="py 2>&1 | tail -10bootstrap-server localhost:9092 --list 2>/dev/null; then
+=== Проверка доступности сервисов ===
+Spark Master UI: ✅ ДОСТУПЕН
+Spark Worker 1: ❌ НЕДОСТУПЕН
+Spark Worker 2: ❌ НЕДОСТУПЕН
+Spark History Server: ✅ ДОСТУПЕН
+Flink JobManager UI: ✅ ДОСТУПЕН
+Redis: ✅ РАБОТАЕТ (PONG)
+ML Server Health: ✅ ЗДОРОВ
+Prometheus: ✅ ДОСТУПЕН
+Grafana: ✅ ДОСТУПЕН (admin/admin)
+Kafka Broker: ❌ ПРОБЛЕМЫ С ПОДКЛЮЧЕНИЕМ
+
+=== Запуск тестового Spark Job ===
+python3: can't open file '/opt/spark/work-dir/test-job.py': [Errno 2] No such file or directory
+25/12/16 03:26:59 INFO ShutdownHookManager: Shutdown hook called
+25/12/16 03:26:59 INFO ShutdownHookManager: Deleting directory /tmp/spark-0e32540d-825b-451f-b0b4-a406e807a4ae
+
+=== Проверка завершена ===

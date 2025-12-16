@@ -1,0 +1,64 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts/*.yml"
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'spark-master'
+    static_configs:
+      - targets: ['spark-master:8080']
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+
+  - job_name: 'spark-workers'
+    static_configs:
+      - targets: ['spark-worker-1:8081', 'spark-worker-2:8082']
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+
+  - job_name: 'flink'
+    static_configs:
+      - targets: ['flink-jobmanager:8081']
+    metrics_path: '/jobs/overview'
+
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-1:9092', 'kafka-2:9093', 'kafka-3:9094']
+    metrics_path: '/metrics'
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+
+  - job_name: 'ml-server'
+    static_configs:
+      - targets: ['ml-server:5000']
+    metrics_path: '/metrics'
+
+  # Мониторинг Docker контейнеров (инфраструктурный уровень)
+  - job_name: 'docker-containers'
+    static_configs:
+      - targets: ['spark-master:9100', 'spark-worker-1:9101', 'spark-worker-2:9102']
+    metrics_path: '/metrics'
+    # Для этого понадобится Node Exporter в контейнерах
+
+  # Кастомные метрики качества данных (уровень данных)
+  - job_name: 'data-quality-metrics'
+    static_configs:
+      - targets: ['localhost:8000']  # Ваш скрипт мониторинга данных
+    metrics_path: '/metrics'
+    scrape_interval: 30s  # Для данных можно реже
+
+  # CI/CD метрики (интеграция с пайплайном)
+  - job_name: 'cicd-metrics'
+    static_configs:
+      - targets: ['localhost:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 60s

@@ -1,0 +1,104 @@
+# Эмуляция KEDA autoscaling через Docker Compose и скрипты
+version: '3.8'
+
+services:
+  # Kafka Consumer для триггера autoscaling
+  kafka-consumer:
+    image: confluentinc/cp-kafka:latest
+    command: >
+      bash -c "
+      echo 'Запуск Kafka Consumer для мониторинга lag...' &&
+      while true; do
+        # Мониторинг lag в Kafka
+        LAG=$(kafka-consumer-groups \
+          --bootstrap-server kafka-1:9092 \
+          --group spark-group \
+          --describe 2>/dev/null | \
+          awk '/TOTAL/{print $6}' | head -1) || LAG=0
+        
+        echo 'Current Kafka Lag: $LAG'
+        
+        # Триггер масштабирования при lag > 1000
+        if [ $LAG -gt 1000 ]; then
+          echo '⚠️  High Kafka lag detected! Scaling up Spark workers...'
+          # Увеличиваем количество workers
+          docker-compose -f docker-compose.full.yml up -d --scale spark-worker=3
+        elif [ $LAG -lt 100 ]; then
+          echo '✅ Low Kafka lag. Scaling down if possible...'
+          # Уменьшаем количество workers (минимум 1)
+          CURRENT_WORKERS=$(docker-compose -f docker-compose.full.yml ps spark-worker | grep -c Up)
+          if [ $CURRENT_WORKERS -gt 1 ]; then
+            docker-compose -f docker-compose.full.yml up -d --scale spark-worker=$((CURRENT_WORKERS - 1))
+          fi
+        fi
+        
+        sleep 30
+      done
+      "
+    depends_on:
+      - kafka-1
+    networks:
+      - kafka-network
+
+  # Autoscaler Manager (эмуляция KEDA)
+  autoscaler-manager:
+    image: alpine:latest
+    command: >
+      sh -c "
+      apk add --no-cache curl jq &&
+      echo 'Autoscaler Manager запущен' &&
+      
+      # Функция мониторинга метрик
+      monitor_metrics() {
+        while true; do
+          # CPU utilization
+          CPU_UTIL=$(docker stats --no-stream --format '{{.CPUPerc}}' lab-6-test-spark-master-1 | sed 's/%//')
+          
+          # Memory usage
+          MEM_USAGE=$(docker stats --no-stream --format '{{.MemUsage}}' lab-6-test-spark-master-1 | cut -d'/' -f1)
+          
+          # Spark application metrics
+          APP_COUNT=$(curl -s http://spark-master:8080 | grep -o 'Applications:[^<]*' | grep -o '[0-9]*' | head -1)
+          
+          echo 'Metrics - CPU: ${CPU_UTIL}%, Memory: ${MEM_USAGE}, Apps: ${APP_COUNT}'
+          
+          # Autoscaling логика
+          if [ $(echo '$CPU_UTIL > 70' | bc -l) -eq 1 ]; then
+            echo '🔺 High CPU usage! Scaling up...'
+            scale_up
+          elif [ $(echo '$CPU_UTIL < 30' | bc -l) -eq 1 ] && [ $APP_COUNT -eq 0 ]; then
+            echo '🔻 Low CPU usage and no apps. Scaling down...'
+            scale_down
+          fi
+          
+          sleep 60
+        done
+      }
+      
+      # Функция масштабирования вверх
+      scale_up() {
+        CURRENT_WORKERS=$(docker-compose -f docker-compose.full.yml ps spark-worker | grep -c Up)
+        if [ $CURRENT_WORKERS -lt 4 ]; then
+          NEW_WORKERS=$((CURRENT_WORKERS + 1))
+          docker-compose -f docker-compose.full.yml up -d --scale spark-worker=$NEW_WORKERS
+          echo 'Scaled up to $NEW_WORKERS workers'
+        fi
+      }
+      
+      # Функция масштабирования вниз
+      scale_down() {
+        CURRENT_WORKERS=$(docker-compose -f docker-compose.full.yml ps spark-worker | grep -c Up)
+        if [ $CURRENT_WORKERS -gt 1 ]; then
+          NEW_WORKERS=$((CURRENT_WORKERS - 1))
+          docker-compose -f docker-compose.full.yml up -d --scale spark-worker=$NEW_WORKERS
+          echo 'Scaled down to $NEW_WORKERS workers'
+        fi
+      }
+      
+      # Запуск мониторинга
+      monitor_metrics
+      "
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - spark-network

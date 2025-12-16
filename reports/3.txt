@@ -1,0 +1,272 @@
+@Egorchik321 ➜ /workspaces/lab-6-test (main) $ # Сделайте скрипты исполняемыми
+chmod +x queue-manager.sh run-spark-dynamic.sh run-optimizations.sh
+chmod +x cost-calculator.py storage-tiering.py cost-reduction-chart.py keda-emulator.py
+
+# Запустите мастер-скрипт оптимизаций
+./run-optimizations.sh
+=== Запуск оптимизаций управления ресурсами ===
+
+1. Настройка YARN Capacity Scheduler...
+WARN[0000] /workspaces/lab-6-test/capacity-scheduler-emulation.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+service "spark-etl-master" refers to undefined network spark-network: invalid compose project
+=== YARN Capacity Scheduler Emulation ===
+Очередь ETL: 60% ресурсов
+Очередь ML: 30% ресурсов
+Очередь Default: 10% ресурсов
+
+Текущее использование ресурсов:
+--------------------------------
+ETL Queue: CPU=%, Memory=MB
+ML Queue:  CPU=%, Memory=MB
+Default:   CPU=%, Memory=MB
+
+Проверка лимитов:
+./queue-manager.sh: line 39: bc: command not found
+./queue-manager.sh: line 43: bc: command not found
+./queue-manager.sh: line 39: bc: command not found
+./queue-manager.sh: line 43: bc: command not found
+./queue-manager.sh: line 39: bc: command not found
+./queue-manager.sh: line 43: bc: command not found
+YARN настроен
+
+2. Настройка Dynamic Allocation в Spark...
+=== Запуск Spark Job с Dynamic Allocation ===
+Job: /opt/spark/examples/jars/spark-examples_2.12-3.5.0.jar
+Master: spark://spark-master:7077
+
+Загружена конфигурация из spark-dynamic.conf
+Error response from daemon: container c7d94b874629ac4a8606a4e2e0a459c6f5e4456e6f3d1269590366f37447dc4b is not running
+
+=== Мониторинг Dynamic Allocation ===
+Ожидание 10 секунд для масштабирования...
+Текущее состояние кластера:
+Error response from daemon: container c7d94b874629ac4a8606a4e2e0a459c6f5e4456e6f3d1269590366f37447dc4b is not running
+Dynamic Allocation настроен
+
+3. Запуск KEDA эмулятора для autoscaling...
+WARN[0000] The "LAG" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "LAG" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "LAG" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CURRENT_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CPU_UTIL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "MEM_USAGE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "APP_COUNT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CPU_UTIL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CPU_UTIL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "APP_COUNT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CURRENT_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NEW_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NEW_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CURRENT_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NEW_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NEW_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] /workspaces/lab-6-test/keda-emulation.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+service "autoscaler-manager" refers to undefined network spark-network: invalid compose project
+ KEDA эмулятор запущен
+
+4. Настройка стратегии spot инстансов...
+WARN[0000] /workspaces/lab-6-test/spot-strategy.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Building 1.2s (20/20) FINISHED                                                                                                                        
+ => [internal] load local bake definitions                                                                                                           0.0s
+ => => reading from stdin 2.99kB                                                                                                                     0.0s
+ => [spark-driver internal] load build definition from Dockerfile                                                                                    0.0s
+ => => transferring dockerfile: 605B                                                                                                                 0.0s
+ => [spark-executor-spot-3 internal] load metadata for docker.io/apache/spark:3.5.0-python3                                                          0.8s
+ => [auth] apache/spark:pull token for registry-1.docker.io                                                                                          0.0s
+ => [spark-executor-ondemand internal] load .dockerignore                                                                                            0.0s
+ => => transferring context: 2B                                                                                                                      0.0s
+ => [spark-executor-spot-1 1/3] FROM docker.io/apache/spark:3.5.0-python3@sha256:0ed5154e6b32ac3af1272d4d65e9f65b13afcfe80b41ad10bd059bcd6317863c    0.0s
+ => CACHED [spark-executor-spot-1 3/3] WORKDIR /opt/spark/work-dir                                                                                   0.0s
+ => CACHED [spark-executor-spot-1 2/3] RUN pip install pandas numpy scikit-learn                                                                     0.0s
+ => [spark-driver] exporting to image                                                                                                                0.0s
+ => => exporting layers                                                                                                                              0.0s
+ => => writing image sha256:740164c49b48f4a52d8a3d15dd68b0007e60fe263f32f40d2776dda4a1b2c3e5                                                         0.0s
+ => => naming to docker.io/library/lab-6-test-spark-driver                                                                                           0.0s
+ => [spark-executor-spot-3] exporting to image                                                                                                       0.1s
+ => => exporting layers                                                                                                                              0.0s
+ => => writing image sha256:380fd18148f8c936266f789325fe5aa502ea6f23ff43c22d4f20debcaaf0a3b2                                                         0.0s
+ => => naming to docker.io/library/lab-6-test-spark-executor-spot-3                                                                                  0.0s
+ => [spark-executor-ondemand] exporting to image                                                                                                     0.0s
+ => => exporting layers                                                                                                                              0.0s
+ => => writing image sha256:81f0da8e148697a5b4782ff4745aa35fa1bc422826456e6b5eff18df56da8517                                                         0.0s
+ => => naming to docker.io/library/lab-6-test-spark-executor-ondemand                                                                                0.0s
+ => [spark-executor-spot-1] exporting to image                                                                                                       0.0s
+ => => exporting layers                                                                                                                              0.0s
+ => => writing image sha256:8275f1d789b3d1da06f2da92d38b902ed1130772d0a19f5ddcb87016bfd38e33                                                         0.0s
+ => => naming to docker.io/library/lab-6-test-spark-executor-spot-1                                                                                  0.0s
+ => [spark-executor-spot-4] exporting to image                                                                                                       0.0s
+ => => exporting layers                                                                                                                              0.0s
+ => => writing image sha256:a2f1fdd8d57eced650a6ce0a5ba9f485450b8f9f9dcbee6b1ce2be685348bed0                                                         0.0s
+ => => naming to docker.io/library/lab-6-test-spark-executor-spot-4                                                                                  0.0s
+ => [spark-executor-spot-2] exporting to image                                                                                                       0.0s
+ => => exporting layers                                                                                                                              0.0s
+ => => writing image sha256:af2cb4174278d8b095a331fdc8cceb216f266159c669bb8458e36d2440d72264                                                         0.0s
+ => => naming to docker.io/library/lab-6-test-spark-executor-spot-2                                                                                  0.0s
+ => [spark-executor-spot-1] resolving provenance for metadata file                                                                                   0.0s
+ => [spark-driver] resolving provenance for metadata file                                                                                            0.0s
+ => [spark-executor-spot-3] resolving provenance for metadata file                                                                                   0.0s
+ => [spark-executor-ondemand] resolving provenance for metadata file                                                                                 0.0s
+ => [spark-executor-spot-4] resolving provenance for metadata file                                                                                   0.0s
+ => [spark-executor-spot-2] resolving provenance for metadata file                                                                                   0.0s
+[+] Running 6/6
+ ✔ lab-6-test-spark-driver             Built                                                                                                         0.0s 
+ ✔ lab-6-test-spark-executor-ondemand  Built                                                                                                         0.0s 
+ ✔ lab-6-test-spark-executor-spot-1    Built                                                                                                         0.0s 
+[+] Running 12/12rk-executor-spot-2    Built                                                                                                         0.0s 
+ ✔ lab-6-test-spark-driver                         Built                                                                                             0.0s 
+ ✔ lab-6-test-spark-executor-ondemand              Built                                                                                             0.0s 
+ ✔ lab-6-test-spark-executor-spot-1                Built                                                                                             0.0s 
+ ✔ lab-6-test-spark-executor-spot-2                Built                                                                                             0.0s 
+ ✔ lab-6-test-spark-executor-spot-3                Built                                                                                             0.0s 
+ ✔ lab-6-test-spark-executor-spot-4                Built                                                                                             0.0s 
+ ✔ Container lab-6-test-spark-driver-1             Started                                                                                           0.4s 
+ ✔ Container lab-6-test-spark-executor-spot-3-1    Started                                                                                           0.8s 
+ ✔ Container lab-6-test-spark-executor-ondemand-1  Started                                                                                           0.9s 
+ ✔ Container lab-6-test-spark-executor-spot-4-1    Started                                                                                           0.8s 
+ ✔ Container lab-6-test-spark-executor-spot-2-1    Started                                                                                           0.8s 
+ ✔ Container lab-6-test-spark-executor-spot-1-1    Started                                                                                           0.9s 
+Spot стратегия применена
+
+5. Расчет экономии от оптимизаций...
+============================================================
+COST OPTIMIZATION REPORT
+============================================================
+
+МЕСЯЧНЫЕ ЗАТРАТЫ:
+  До оптимизации: $2,903.04
+  После оптимизации: $1,354.75
+  Экономия: $1,548.29 (53.33%)
+
+ЗАТРАТЫ НА JOB:
+  До: $7.6800
+  После: $3.3792
+  Экономия: $4.3008
+
+SPOT ИНСТАНСЫ:
+  Использование: 80%
+  Spot executors: 8
+  On-demand executors: 2
+
+МЕТРИКИ ЭФФЕКТИВНОСТИ:
+  Cost efficiency: 75.0%
+  Optimization factor: 2.27
+  SLA: 99.92% (target: 99.9%)
+
+РЕКОМЕНДАЦИИ ПО ИНСТАНСАМ:
+  CPU-bound задачи: c5.4xlarge
+    → Экономия: 35%
+  Memory-bound задачи: r5.4xlarge
+    → Экономия: 25%
+
+СТРАТЕГИИ ОПТИМИЗАЦИИ:
+  1. 80% spot instances for executors
+  2. On-demand for driver (high availability)
+  3. Dynamic allocation (2-8 executors)
+  4. Right-sizing instances per task type
+  5. Memory optimization (60% fraction)
+
+============================================================
+Отчет сгенерирован: 2025-12-16T05:18:43.984988
+Отчет сохранен в cost-optimization-report.json
+Расчет экономии завершен
+
+6. Применение storage tiering...
+============================================================
+STORAGE TIERING OPTIMIZATION
+============================================================
+
+АНАЛИЗ ПАТТЕРНОВ ДОСТУПА:
+  recent_transactions: 40GB, доступ: daily
+  user_profiles: 60GB, доступ: weekly
+  historical_sales: 50GB, доступ: monthly
+  archive_logs: 20GB, доступ: yearly
+
+ОПТИМИЗИРОВАННОЕ РАСПРЕДЕЛЕНИЕ:
+  Hot tier: 40GB (активные данные)
+  Warm tier: 60GB (редко используемые)
+  Cold tier: 70GB (архивные)
+
+МИГРАЦИЯ ДАННЫХ:
+Migrating 50GB from hot to cold tier...
+  Сэкономлено: $4.50/месяц
+
+ПОЛИТИКИ TIERING ДЛЯ ТАБЛИЦ:
+Applying tiering policy to sales:
+
+        -- Автоматический переход старых данных в холодное хранилище
+        ALTER TABLE sales SET TBLPROPERTIES (
+            "storage_handler" = "org.apache.hadoop.hive.ql.storage.ArchiveStorageHandler",
+            "retention_days" = "365",
+            "tiering_policy" = "{
+                'hot': {'days': 7},
+                'warm': {'days': 30},
+                'cold': {'days': 365}
+            }"
+        );
+        
+  sales: политика применена
+Applying tiering policy to user_behavior:
+
+        -- Автоматический переход старых данных в холодное хранилище
+        ALTER TABLE user_behavior SET TBLPROPERTIES (
+            "storage_handler" = "org.apache.hadoop.hive.ql.storage.ArchiveStorageHandler",
+            "retention_days" = "365",
+            "tiering_policy" = "{
+                'hot': {'days': 7},
+                'warm': {'days': 30},
+                'cold': {'days': 365}
+            }"
+        );
+        
+  user_behavior: политика применена
+Applying tiering policy to product_catalog:
+
+        -- Автоматический переход старых данных в холодное хранилище
+        ALTER TABLE product_catalog SET TBLPROPERTIES (
+            "storage_handler" = "org.apache.hadoop.hive.ql.storage.ArchiveStorageHandler",
+            "retention_days" = "365",
+            "tiering_policy" = "{
+                'hot': {'days': 7},
+                'warm': {'days': 30},
+                'cold': {'days': 365}
+            }"
+        );
+        
+  product_catalog: политика применена
+
+РЕЗУЛЬТАТЫ ОПТИМИЗАЦИИ:
+  Исходная стоимость: $17.00/месяц
+  После оптимизации: $7.20/месяц
+  Экономия: $9.80/месяц (57.65%)
+
+ЦЕЛЬ: 50.0% экономии
+   ДОСТИГНУТО: 57.65%
+ ЦЕЛЬ ДОСТИГНУТА!
+
+РАСПРЕДЕЛЕНИЕ ДАННЫХ:
+  Hot: 50GB (29.4%)
+  Warm: 50GB (29.4%)
+  Cold: 70GB (41.2%)
+
+============================================================
+Отчет сгенерирован: 2025-12-16T05:18:44.662105
+Отчет сохранен в storage-tiering-report.json
+Storage tiering применен
+
+7. Генерация графика снижения затрат...
+Traceback (most recent call last):
+  File "/workspaces/lab-6-test/cost-reduction-chart.py", line 6, in <module>
+    import matplotlib.pyplot as plt
+ModuleNotFoundError: No module named 'matplotlib'
+График сгенерирован
+
+=== Все оптимизации успешно применены ===
+Отчеты сохранены в файлах:
+  • cost-optimization-report.json
+  • storage-tiering-report.json
+  • cost-reduction-data.json
+  • cost-reduction-chart.png
+
+Для мониторинга используйте:
+  ./queue-manager.sh monitor
+  python3 keda-emulator.py

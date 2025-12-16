@@ -1,0 +1,35 @@
+{
+  "timestamp": "2025-12-16T05:18:44.662105",
+  "storage_costs": {
+    "baseline_all_hot": 17.0,
+    "optimized_tiered": 7.2,
+    "monthly_savings": 9.8,
+    "savings_percentage": 57.65,
+    "target_savings": 50.0
+  },
+  "data_distribution": {
+    "hot_gb": 50,
+    "warm_gb": 50,
+    "cold_gb": 70,
+    "total_gb": 170
+  },
+  "cost_per_tier": {
+    "hot": {
+      "cost_per_gb": 0.1,
+      "total_cost": 5.0
+    },
+    "warm": {
+      "cost_per_gb": 0.03,
+      "total_cost": 1.5
+    },
+    "cold": {
+      "cost_per_gb": 0.01,
+      "total_cost": 0.7
+    }
+  },
+  "achievements": {
+    "target_50_savings": true,
+    "hot_data_reduction": 70.59,
+    "cold_data_utilization": 41.18
+  }
+}

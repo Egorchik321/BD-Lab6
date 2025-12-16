@@ -1,0 +1,75 @@
+# Эмуляция YARN Capacity Scheduler через Docker labels и ресурсы
+version: '3.8'
+
+services:
+  # Очередь ETL (60% ресурсов)
+  spark-etl-master:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.master.Master 
+      --host spark-etl-master 
+      --port 7077 
+      --webui-port 8080
+    deploy:
+      resources:
+        limits:
+          cpus: '1.2'    # 60% от 2 CPU
+          memory: 9.6G   # 60% от 16GB
+      placement:
+        constraints:
+          - node.labels.queue == etl
+    labels:
+      - "yarn.queue=etl"
+      - "capacity.percentage=60"
+      - "scheduler.priority=high"
+    networks:
+      - spark-network
+
+  # Очередь ML (30% ресурсов)
+  spark-ml-master:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.master.Master 
+      --host spark-ml-master 
+      --port 7078 
+      --webui-port 8085
+    deploy:
+      resources:
+        limits:
+          cpus: '0.6'    # 30% от 2 CPU
+          memory: 4.8G   # 30% от 16GB
+      placement:
+        constraints:
+          - node.labels.queue == ml
+    labels:
+      - "yarn.queue=ml"
+      - "capacity.percentage=30"
+      - "scheduler.priority=medium"
+    networks:
+      - spark-network
+
+  # Очередь Default (10% ресурсов)
+  spark-default-master:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.master.Master 
+      --host spark-default-master 
+      --port 7079 
+      --webui-port 8090
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'    # 10% от 2 CPU
+          memory: 1.6G   # 10% от 16GB
+      placement:
+        constraints:
+          - node.labels.queue == default
+    labels:
+      - "yarn.queue=default"
+      - "capacity.percentage=10"
+      - "scheduler.priority=low"
+    networks:
+      - spark-network

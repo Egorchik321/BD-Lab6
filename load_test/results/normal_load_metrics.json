@@ -1,0 +1,14 @@
+{
+  "test_name": "normal_load",
+  "scenario": "Нормальная нагрузка (100 RPS)",
+  "results": {
+    "simulated_metrics": {
+      "avg_latency_ms": 85.3,
+      "availability_percent": 99.95
+    },
+    "sla_compliance": {
+      "latency_under_100ms": true,
+      "availability_over_99.9": true
+    }
+  }
+}

@@ -1,0 +1,57 @@
+name: E-Commerce CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15 # Защита от зависаний
+
+    steps:
+      - name:  Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐋 Start Spark cluster for testing
+        run: |
+          # Собираем и запускаем только необходимые сервисы
+          docker-compose -f docker-compose.ci.yml build --no-cache
+          docker-compose -f docker-compose.ci.yml up -d
+          sleep 30  # Даем время на запуск
+
+      - name:  Run basic data validation (stub)
+        run: python scripts/validate_data.py
+
+      - name:  Run Spark ETL connectivity test
+        run: |
+          # Запускаем тест внутри контейнера Spark, так как в окружении Actions нет зависимостей
+          docker-compose -f docker-compose.ci.yml exec -T spark-master \
+            python /opt/spark/work-dir/tests/test_etl.py
+
+      - name: Apply Storage Tiering (Cost Optimization)
+        run: python scripts/apply_storage_tiering.py --target-savings 50
+        env:
+          # Указываем корректный путь к данным для скрипта
+          DATA_PATH: "data/"
+
+      - name: Generate final CI/CD report
+        run: |
+          echo "=== CI/CD EXECUTION REPORT ===" > reports/cicd_summary.txt
+          echo "Timestamp: $(date)" >> reports/cicd_summary.txt
+          echo "Status: SUCCESS" >> reports/cicd_summary.txt
+          echo "Cost Optimization Target: 50% storage savings" >> reports/cicd_summary.txt
+          echo "---" >> reports/cicd_summary.txt
+          echo "Services deployed: Spark, Kafka, Redis" >> reports/cicd_summary.txt
+          cat reports/cicd_summary.txt
+
+      - name:  Cleanup Docker containers
+        if: always()
+        run: docker-compose -f docker-compose.ci.yml down
+    
+      - name: Log CI/CD Metrics
+        run: |
+            python scripts/log_ci_metrics.py
+                # Отправка метрик в Prometheus (эмуляция)
+            curl -X POST http://localhost:9090/api/v1/import/prometheus \
+                --data-binary @reports/cicd_metrics.prom

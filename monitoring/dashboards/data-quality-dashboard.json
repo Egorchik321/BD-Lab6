@@ -1,0 +1,30 @@
+{
+  "dashboard": {
+    "title": "Data Quality Monitoring",
+    "panels": [
+      {
+        "title": "Data Drift Score",
+        "type": "gauge",
+        "targets": [{
+          "expr": "data_drift_score",
+          "legendFormat": "Drift Score"
+        }],
+        "thresholds": {
+          "steps": [
+            {"color": "green", "value": 0},
+            {"color": "yellow", "value": 0.1},
+            {"color": "red", "value": 0.2}
+          ]
+        }
+      },
+      {
+        "title": "Late Arriving Data",
+        "type": "graph",
+        "targets": [{
+          "expr": "time() - last_data_timestamp",
+          "legendFormat": "Delay (seconds)"
+        }]
+      }
+    ]
+  }
+}

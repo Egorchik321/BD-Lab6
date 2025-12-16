@@ -1,0 +1,314 @@
+version: '3.8'
+
+services:
+  spark-master:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.master.Master 
+      --host spark-master 
+      --port 7077 
+      --webui-port 8080
+    hostname: spark-master
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Dspark.deploy.defaultCores=1
+      - SPARK_LOCAL_DIRS=/tmp/spark-local  
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'   
+          memory: 1G     
+        reservations:
+          cpus: '0.2'
+          memory: 768M
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - spark-network
+    volumes:
+      - spark-master-data:/tmp/spark-events
+      - shared-data:/opt/spark/work-dir/data
+
+  spark-worker-1:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.worker.Worker 
+      spark://spark-master:7077 
+      --cores 2          # Уменьшили с 8
+      --memory 4g        # Уменьшили с 24g
+      --webui-port 8081
+    hostname: spark-worker-1
+    environment:
+      - SPARK_WORKER_CORES=2        
+      - SPARK_WORKER_MEMORY=4g      
+      - SPARK_EXECUTOR_MEMORY=2g    
+      - SPARK_EXECUTOR_MEMORY_OVERHEAD=512m  
+      - SPARK_EXECUTOR_INSTANCES=1  
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+      - SPARK_LOCAL_DIRS=/tmp/spark-local
+      - SPARK_WORKER_WEBUI_PORT=8081
+    # УМЕНЬШАЕМ РЕСУРСЫ!
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'    
+          memory: 4G     
+        reservations:
+          cpus: '0.3'
+          memory: 3G
+    ports:
+      - "8081:8081"
+    networks:
+      - spark-network
+    volumes:
+      - spark-worker-1-data:/tmp/spark-local
+      - shared-data:/opt/spark/work-dir/data
+    depends_on:
+      - spark-master
+    labels:
+      - "spark-role=executor"
+      - "instance-type=spot"
+
+  spark-worker-2:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.worker.Worker 
+      spark://spark-master:7077 
+      --cores 2          # Уменьшили с 8
+      --memory 4g        # Уменьшили с 24g
+      --webui-port 8082
+    hostname: spark-worker-2
+    environment:
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=4g
+      - SPARK_EXECUTOR_MEMORY=2g
+      - SPARK_EXECUTOR_MEMORY_OVERHEAD=512m
+      - SPARK_EXECUTOR_INSTANCES=1
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+      - SPARK_LOCAL_DIRS=/tmp/spark-local
+      - SPARK_WORKER_WEBUI_PORT=8082
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'    
+          memory: 4G     
+        reservations:
+          cpus: '0.3'
+          memory: 3G
+    ports:
+      - "8082:8082"
+    networks:
+      - spark-network
+    volumes:
+      - spark-worker-2-data:/tmp/spark-local
+      - shared-data:/opt/spark/work-dir/data
+    depends_on:
+      - spark-master
+    labels:
+      - "spark-role=executor"
+      - "instance-type=spot"
+
+  spark-history-server:
+    build: ./spark
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.history.HistoryServer
+    environment:
+      - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=/tmp/spark-events -Dspark.history.ui.port=18080
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 512M
+    ports:
+      - "18080:18080"
+    networks:
+      - spark-network
+    volumes:
+      - spark-master-data:/tmp/spark-events
+    depends_on:
+      - spark-master
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 512M
+    networks:
+      - kafka-network
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka-1
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: "-Xmx256m -Xms128m" 
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'   
+          memory: 512M   
+    networks:
+      - kafka-network
+      - spark-network
+    volumes:
+      - kafka-1-data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
+
+  # Убираем kafka-2 и kafka-3 для экономии ресурсов
+  # Оставляем только 1 брокер для демонстрации
+  
+  flink-jobmanager:
+    image: flink:1.18.0-scala_2.12
+    command: jobmanager
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'    
+          memory: 1G     
+    ports:
+      - "8083:8081"
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2    # Уменьшили с 4
+        parallelism.default: 1
+    networks:
+      - spark-network
+      - kafka-network
+    depends_on:
+      - zookeeper
+
+  # Оставляем только 1 TaskManager вместо 2
+  flink-taskmanager-1:
+    image: flink:1.18.0-scala_2.12
+    command: taskmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'   
+          memory: 2G    
+    networks:
+      - spark-network
+      - kafka-network
+    depends_on:
+      - flink-jobmanager
+
+  # Убираем flink-taskmanager-2
+
+  redis:
+    build: ./redis
+    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'    
+          memory: 512M   
+    ports:
+      - "6379:6379"
+    networks:
+      - spark-network
+    volumes:
+      - redis-data:/data
+      - redis-config:/usr/local/etc/redis
+
+  ml-server:
+    build: ./ml-server
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'    
+          memory: 512M   
+    ports:
+      - "5000:5000"
+    networks:
+      - spark-network
+    environment:
+      - REDIS_HOST=redis
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-1:9092
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=2h'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 256M
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring-network
+      - spark-network
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 256M
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring-network
+    depends_on:
+      - prometheus
+
+networks:
+  spark-network:
+    driver: bridge
+  kafka-network:
+    driver: bridge
+  monitoring-network:
+    driver: bridge
+
+volumes:
+  spark-master-data:
+  spark-worker-1-data:
+  spark-worker-2-data:
+  shared-data:
+  zookeeper-data:
+  zookeeper-log:
+  kafka-1-data:
+  redis-data:
+  redis-config:
+  prometheus-data:
+  grafana-data:
